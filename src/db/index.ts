@@ -1,19 +1,23 @@
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle, PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+declare global {
+  // eslint-disable-next-line no-var
+  var __drizzleDb__: PostgresJsDatabase | undefined;
+}
+
 const setup = () => {
-  if (!process.env.DATABASE_URL) {
-    console.error("DATABASE_URL is not set");
-    return {
-      select: () => ({
-        from: () => [],
-      }),
-    };
+  if (global.__drizzleDb__) {
+    return global.__drizzleDb__;
   }
 
-  // for query purposes
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not set");
+  }
+
   const queryClient = postgres(process.env.DATABASE_URL);
   const db = drizzle(queryClient);
+  global.__drizzleDb__ = db;
   return db;
 };
 
